@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RutaSmart - Mapa</title>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        #destinationForm {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ubicación del Taxi y el Destino del Cliente</h1>
+
+    <div id="destinationForm">
+        <label for="latitude">Latitud del Destino:</label>
+        <input type="number" id="latitude" step="any" placeholder="Ej. -3.9910" required>
+        <br>
+        <label for="longitude">Longitud del Destino:</label>
+        <input type="number" id="longitude" step="any" placeholder="Ej. -79.2040" required>
+        <br>
+        <button onclick="setDestination()">Establecer Destino</button>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        var map = L.map('map').setView([-3.9935, -79.2041], 12); 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var taxiMarker = L.marker([-3.9910, -79.2040]).addTo(map); 
+
+        var destinationMarker = L.marker([-3.9910, -79.2040], {icon: L.icon({iconUrl: 'destination-icon.png'})}).addTo(map); 
+
+        function moveTaxiToDestination(destinationLat, destinationLon) {
+            taxiMarker.flyTo([destinationLat, destinationLon], {
+                duration: 5 
+            });
+        }
+
+        function setDestination() {
+            var lat = parseFloat(document.getElementById('latitude').value);
+            var lon = parseFloat(document.getElementById('longitude').value);
+
+            if (isNaN(lat) || isNaN(lon)) {
+                alert("Por favor, ingresa coordenadas válidas.");
+                return;
+            }
+
+            destinationMarker.setLatLng([lat, lon]);
+
+            moveTaxiToDestination(lat, lon);
+
+            alert('Destino establecido: ' + lat + ', ' + lon);
+        }
+
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371; 
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c; 
+            return distance * 1000; 
+        }
+
+        function toRad(degrees) {
+            return degrees * Math.PI / 180;
+        }
+
+        function checkTaxiProximity() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var userLat = position.coords.latitude;
+                    var userLon = position.coords.longitude;
+
+                    var distance = haversine(userLat, userLon, taxiMarker.getLatLng().lat, taxiMarker.getLatLng().lng);
+
+                    if (distance > 100) {
+                        moveTaxiToDestination(destinationMarker.getLatLng().lat, destinationMarker.getLatLng().lng);
+                    }
+
+                    if (distance < 100) {
+                        sendNotification();
+                    }
+                });
+            } else {
+                alert("La geolocalización no está soportada por tu navegador.");
+            }
+        }
+
+        setInterval(checkTaxiProximity, 10000);
+
+        function sendNotification() {
+            if (Notification.permission === 'granted') {
+                var notification = new Notification('¡Tu taxi está cerca!', {
+                    body: 'Tu taxi está a menos de 100 metros de tu ubicación.',
+                    icon: 'resources/taxis.jpg',
+                });
+
+                notification.onclick = function() {
+                    window.location.href = 'dashboard.html'; 
+                };
+            }
+        }
+
+        if (Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+    </script>
+</body>
+</html>
