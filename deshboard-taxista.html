@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard del Taxista</title>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        main {
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .section {
+            margin-top: 20px;
+        }
+
+        #requestDetails {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Dashboard del Taxista</h1>
+    </header>
+
+    <main>
+        <!-- Sección de Actualización de Ubicación -->
+        <div class="section">
+            <h2>Actualizar Ubicación</h2>
+            <button onclick="updateLocation()">Actualizar Ubicación</button>
+        </div>
+
+        <!-- Mapa -->
+        <div id="map"></div>
+
+        <!-- Sección de Solicitud de Viaje -->
+        <div class="section">
+            <h2>Solicitud de Viaje</h2>
+            <button onclick="getPassengerRequest()">Ver Solicitud</button>
+            <div id="requestDetails"></div>
+        </div>
+    </main>
+
+    <script>
+        // Inicializar mapa y marcador del taxi
+        const map = L.map('map').setView([-3.9935, -79.2041], 12); // Coordenadas iniciales
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const taxiMarker = L.marker([-3.9935, -79.2041], { draggable: false }).addTo(map);
+
+        // Función para actualizar la ubicación del taxi
+        function updateLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    // Mover el marcador y ajustar el mapa
+                    taxiMarker.setLatLng([lat, lon]);
+                    map.setView([lat, lon], 15);
+
+                    // Enviar la ubicación actual al servidor
+                    fetch('http://localhost:3000/update-taxi-location', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ taxiId: "TAXI_001", lat, lon })
+                    })
+                        .then(response => response.json())
+                        .then(data => alert(data.message))
+                        .catch(error => alert('Error actualizando ubicación: ' + error));
+                });
+            } else {
+                alert("La geolocalización no está soportada por tu navegador.");
+            }
+        }
+
+        // Función para obtener la solicitud del pasajero
+        function getPassengerRequest() {
+            fetch('http://localhost:3000/get-passenger-request')
+                .then(response => response.json())
+                .then(data => {
+                    const requestDetails = document.getElementById('requestDetails');
+                    if (data.message) {
+                        requestDetails.innerHTML = `<strong>${data.message}</strong>`;
+                    } else {
+                        requestDetails.innerHTML = `
+                            <strong>Recogida:</strong> ${data.pickup.lat}, ${data.pickup.lon}<br>
+                            <strong>Destino:</strong> ${data.destination.lat}, ${data.destination.lon}
+                        `;
+                    }
+                })
+                .catch(error => alert('Error obteniendo la solicitud: ' + error));
+        }
+    </script>
+</body>
+</html>

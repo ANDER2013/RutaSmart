@@ -116,8 +116,7 @@ function sendNotification() {
         });
 
         notification.onclick = function() {
-            // Acción cuando el usuario haga clic en la notificación
-            window.location.href = 'dashboard.html'; // Redirigir al usuario si hace clic
+            window.location.href = 'dashboard.html'; 
         };
     }
 }

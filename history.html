@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Viajes</title>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        .history-item {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .history-item h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        .history-item p {
+            margin: 5px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Historial de Viajes</h1>
+    <div id="map"></div>
+
+    <h2>Historial de Viajes:</h2>
+    <div id="trip-history"></div>
+
+    <script>
+        var map = L.map('map').setView([-3.9910, -79.2040], 12); // Ubicación inicial del mapa
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        function getTripHistory() {
+            fetch('http://localhost:3000/get-trip-history')
+                .then(response => response.json())
+                .then(data => {
+                    const historyDiv = document.getElementById('trip-history');
+                    historyDiv.innerHTML = '';
+                    data.forEach((trip, index) => {
+                        const tripItem = document.createElement('div');
+                        tripItem.classList.add('history-item');
+                        tripItem.innerHTML = `
+                            <h3>Viaje #${index + 1}</h3>
+                            <p><strong>Recogida:</strong> ${trip.pickup.lat}, ${trip.pickup.lon}</p>
+                            <p><strong>Destino:</strong> ${trip.destination.lat}, ${trip.destination.lon}</p>
+                            <p><strong>Distancia:</strong> ${trip.distance} km</p>
+                            <p><strong>Costo:</strong> $${trip.cost}</p>
+                        `;
+                        historyDiv.appendChild(tripItem);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        getTripHistory();
+    </script>
+</body>
+</html>
