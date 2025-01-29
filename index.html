@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RutaSmart</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-section">
+            <div class="logo-container">
+                <img src="resources/taxis.jpg" alt="Logo RutaSmart" class="logo">
+            </div>
+            <h1 class="title">¡Bienvenido a RutaSmart!</h1>
+
+            <form id="loginForm">
+                <input type="text" id="phoneNumber" placeholder="Número de Teléfono" class="input-field" required>
+                <input type="email" id="email" placeholder="Usuario o Correo Electrónico" class="input-field" required>
+                <input type="password" id="password" placeholder="Contraseña" class="input-field" required>
+                <button type="submit" class="btn btn-login">Iniciar Sesión</button>
+            </form>
+
+            <button class="btn btn-register" id="showRegisterForm">Registrarse</button>
+            <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+
+            <div id="registerSection" style="display:none;">
+                <h2>Registro</h2>
+                <form id="registerForm">
+                    <input type="text" id="registerName" placeholder="Nombre Completo" class="input-field" required>
+                    <input type="text" id="registerPhone" placeholder="Número de Teléfono" class="input-field" required>
+                    <input type="email" id="registerEmail" placeholder="Correo Electrónico" class="input-field" required>
+                    <input type="password" id="registerPassword" placeholder="Contraseña" class="input-field" required>
+                    <button type="submit" class="btn btn-register">Crear Cuenta</button>
+                </form>
+                <button class="btn btn-login" id="backToLogin">Volver al Inicio de Sesión</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RutaSmart - Inicio</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="scripts/main.js" defer></script>
+</head>
+</html>
+
+
+//https://rutasmart.netlify.app/

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RutaSmart</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav {
+            background: linear-gradient(45deg, #4CAF50, #388E3C);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        nav .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav ul li {
+            margin-left: 30px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: color 0.3s, transform 0.3s;
+        }
+
+        nav ul li a:hover {
+            color: #FFC107;
+            transform: scale(1.1);
+        }
+
+        section {
+            display: none;
+            padding: 30px;
+        }
+
+        section.active {
+            display: block;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+
+        .form-container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 6px 30px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .form-container h2 {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: #4CAF50;
+        }
+
+        .form-container label, .form-container p {
+            margin-bottom: 15px;
+            display: block;
+            color: #555;
+        }
+
+        .form-container input, .form-container button {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: background-color 0.3s;
+        }
+
+        .form-container input:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+
+        .form-container button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .form-container button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        #map, #taxiMap {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+            border-radius: 10px;
+            display: block;
+            position: relative;
+        }
+
+        .notification {
+            background: #FFD700;
+            padding: 15px;
+            color: #000;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .request-item {
+            background: #f1f1f1;
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .request-item button {
+            width: 48%;
+            margin-top: 10px;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .request-item button:hover {
+            background-color: #FF5722;
+            transform: scale(1.05);
+        }
+
+        .history-container {
+            margin-top: 30px;
+        }
+
+        .history-container h3 {
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            color: #4CAF50;
+        }
+
+        .history-item {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">RutaSmart</div>
+        <ul>
+            <li><a href="#" onclick="showSection('dashboard')">Cliente</a></li>
+            <li><a href="#" onclick="showSection('taxi')">Taxista</a></li>
+        </ul>
+    </nav>
+
+    <!-- Sección del cliente -->
+    <section id="dashboard" class="active">
+        <h1>Solicitar Taxi</h1>
+        <div class="form-container">
+            <h2>Solicitud en Loja</h2>
+            <form id="taxiRequestForm">
+                <label for="name">Nombre:</label>
+                <input type="text" id="name" name="name" required>
+                <label for="pickup">Lugar de recogida:</label>
+                <input type="text" id="pickup" name="pickup" readonly>
+                <button type="submit">Solicitar Taxi</button>
+            </form>
+        </div>
+        <div id="map"></div>
+    </section>
+
+    <!-- Sección del taxista -->
+    <section id="taxi">
+        <h1>Taxista</h1>
+        <div class="notification" id="newRequestNotification" style="display: none;">¡Nueva solicitud de taxi!</div>
+        <div class="form-container">
+            <button onclick="updateLocation()">Actualizar Ubicación</button>
+        </div>
+        <div id="taxiMap"></div>
+        <div class="form-container">
+            <h2>Solicitudes Recibidas</h2>
+            <div id="requestsList"></div>
+        </div>
+        <div class="history-container">
+            <h3>Historial de Solicitudes</h3>
+            <div id="historyList"></div>
+        </div>
+    </section>
+
+    <audio id="notificationSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        let requests = []; // Lista para almacenar las solicitudes enviadas por los clientes.
+        let history = [];  // Lista para almacenar el historial de solicitudes aceptadas.
+
+        function showSection(sectionId) {
+            document.querySelectorAll('section').forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+
+            if(sectionId === "taxi"){
+                setTimeout(() => {
+                    taxiMap.invalidateSize();
+                }, 500);
+            }
+        }
+
+        // Mapa del cliente
+        const map = L.map('map').setView([-3.9935, -79.2041], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        const pickupMarker = L.marker([-3.9935, -79.2041], { draggable: true }).addTo(map);
+
+        // Actualizar el campo de recogida cuando el marcador se mueve
+        pickupMarker.on('dragend', e => {
+            const latlng = e.target.getLatLng();
+            document.getElementById("pickup").value = `Lat: ${latlng.lat}, Lon: ${latlng.lng}`;
+        });
+
+        // Observador para actualizar ubicación del cliente
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(pos => {
+                const { latitude, longitude } = pos.coords;
+                map.setView([latitude, longitude]);
+                pickupMarker.setLatLng([latitude, longitude]);
+                document.getElementById("pickup").value = `Lat: ${latitude}, Lon: ${longitude}`;
+            });
+        } else {
+            alert("Geolocalización no soportada.");
+        }
+
+        // Enviar la solicitud del taxi
+        document.getElementById("taxiRequestForm").addEventListener("submit", event => {
+            event.preventDefault();
+
+            const name = document.getElementById("name").value;
+            const pickup = document.getElementById("pickup").value;
+
+            // Verificamos si los campos están completos
+            if (name && pickup) {
+                const request = { name, pickup };
+                requests.push(request); // Guardamos la solicitud en la lista.
+                updateRequestsList(); // Actualizamos la lista visible para el taxista.
+
+                alert("Taxi solicitado con éxito.");
+
+                // Restablecemos el formulario y actualizamos la ubicación
+                document.getElementById("taxiRequestForm").reset();
+                updatePickupLocation(); // Actualizamos la ubicación para la siguiente solicitud
+            } else {
+                alert("Por favor, complete todos los campos.");
+            }
+        });
+
+        // Función para actualizar la ubicación del cliente después de enviar una solicitud
+        function updatePickupLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const { latitude, longitude } = pos.coords;
+                    map.setView([latitude, longitude], map.getZoom());  // Centrar el mapa en la nueva ubicación
+                    pickupMarker.setLatLng([latitude, longitude]);  // Mover el marcador
+                    document.getElementById("pickup").value = `Lat: ${latitude}, Lon: ${longitude}`;  // Actualizar el campo de entrada
+                });
+            } else {
+                alert("Geolocalización no soportada.");
+            }
+        }
+
+        // Mapa del taxista
+        const taxiMap = L.map('taxiMap', {
+            center: [-3.9935, -79.2041],
+            zoom: 12,
+            invalidateSize: true
+        });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(taxiMap);
+        const taxiMarker = L.marker([-3.9935, -79.2041]).addTo(taxiMap);
+
+        // Redimensionar mapa cuando la pestaña del taxista se activa
+        function resizeMap() {
+            setTimeout(() => {
+                taxiMap.invalidateSize();
+            }, 300);
+        }
+
+        document.querySelector("a[onclick='showSection(\"taxi\")']").addEventListener("click", resizeMap);
+
+        // Actualizar ubicación del taxista
+        function updateLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const { latitude, longitude } = pos.coords;
+                    taxiMarker.setLatLng([latitude, longitude]);
+                    taxiMap.setView([latitude, longitude]);
+                });
+            } else {
+                alert("Geolocalización no soportada.");
+            }
+        }
+
+        // Actualizar la lista de solicitudes para el taxista
+        function updateRequestsList() {
+            const requestsList = document.getElementById("requestsList");
+            requestsList.innerHTML = ''; // Limpiamos la lista anterior
+
+            requests.forEach((request, index) => {
+                const div = document.createElement('div');
+                div.classList.add('request-item');
+                div.innerHTML = `
+                    <p><strong>Nombre:</strong> ${request.name}</p>
+                    <p><strong>Lugar de recogida:</strong> ${request.pickup}</p>
+                    <button onclick="acceptRequest(${index})">Aceptar</button>
+                    <button onclick="rejectRequest(${index})">Rechazar</button>
+                `;
+                requestsList.appendChild(div);
+            });
+
+            if (requests.length > 0) {
+                document.getElementById("newRequestNotification").style.display = 'block';
+                document.getElementById("notificationSound").play();
+            }
+        }
+
+        // Aceptar solicitud
+        function acceptRequest(index) {
+            const acceptedRequest = requests.splice(index, 1)[0];
+            history.push(acceptedRequest);
+            updateHistoryList();
+            updateRequestsList();
+        }
+
+        // Rechazar solicitud
+        function rejectRequest(index) {
+            requests.splice(index, 1);
+            updateRequestsList();
+        }
+
+        // Actualizar la lista de historial de solicitudes
+        function updateHistoryList() {
+            const historyList = document.getElementById("historyList");
+            historyList.innerHTML = ''; // Limpiamos la lista anterior
+
+            history.forEach((request) => {
+                const div = document.createElement('div');
+                div.classList.add('history-item');
+                div.innerHTML = `
+                    <p><strong>Nombre:</strong> ${request.name}</p>
+                    <p><strong>Lugar de recogida:</strong> ${request.pickup}</p>
+                `;
+                historyList.appendChild(div);
+            });
+        }
+    </script>
+
+</body>
+</html>
