@@ -214,7 +214,6 @@
         <div class="form-container">
             <h2>Solicitudes Recibidas</h2>
             <div id="requestsList"></div>
-            <button onclick="refreshRequests()">Actualizar Solicitudes</button>
         </div>
         <div class="history-container">
             <h3>Historial de Solicitudes</h3>
@@ -226,9 +225,8 @@
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Inicializar listas de solicitudes y historial
-        let requests = JSON.parse(localStorage.getItem('requests')) || []; 
-        let history = JSON.parse(localStorage.getItem('history')) || []; 
+        let requests = []; // Lista para almacenar las solicitudes enviadas por los clientes.
+        let history = [];  // Lista para almacenar el historial de solicitudes aceptadas.
 
         function showSection(sectionId) {
             document.querySelectorAll('section').forEach(section => section.classList.remove('active'));
@@ -271,19 +269,35 @@
             const name = document.getElementById("name").value;
             const pickup = document.getElementById("pickup").value;
 
+            // Verificamos si los campos están completos
             if (name && pickup) {
                 const request = { name, pickup };
                 requests.push(request); // Guardamos la solicitud en la lista.
-                localStorage.setItem('requests', JSON.stringify(requests)); // Guardamos las solicitudes en el localStorage
-
                 updateRequestsList(); // Actualizamos la lista visible para el taxista.
 
                 alert("Taxi solicitado con éxito.");
+
+                // Restablecemos el formulario y actualizamos la ubicación
                 document.getElementById("taxiRequestForm").reset();
+                updatePickupLocation(); // Actualizamos la ubicación para la siguiente solicitud
             } else {
                 alert("Por favor, complete todos los campos.");
             }
         });
+
+        // Función para actualizar la ubicación del cliente después de enviar una solicitud
+        function updatePickupLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const { latitude, longitude } = pos.coords;
+                    map.setView([latitude, longitude], map.getZoom());  // Centrar el mapa en la nueva ubicación
+                    pickupMarker.setLatLng([latitude, longitude]);  // Mover el marcador
+                    document.getElementById("pickup").value = `Lat: ${latitude}, Lon: ${longitude}`;  // Actualizar el campo de entrada
+                });
+            } else {
+                alert("Geolocalización no soportada.");
+            }
+        }
 
         // Mapa del taxista
         const taxiMap = L.map('taxiMap', {
@@ -294,23 +308,13 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(taxiMap);
         const taxiMarker = L.marker([-3.9935, -79.2041]).addTo(taxiMap);
 
-        // Actualizar ubicación del taxista
-        function updateLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    const { latitude, longitude } = pos.coords;
-                    taxiMarker.setLatLng([latitude, longitude]);
-                    taxiMap.setView([latitude, longitude]);
-                });
-            } else {
-                alert("Geolocalización no soportada.");
-            }
-        }
+        // Redimensionar mapa cuando cambie el tamaño de la ventana
+        window.onresize = () => taxiMap.invalidateSize();
 
-        // Actualizar la lista de solicitudes para el taxista
+        // Actualizar la lista de solicitudes cada 5 segundos
         function updateRequestsList() {
             const requestsList = document.getElementById("requestsList");
-            requestsList.innerHTML = ''; // Limpiamos la lista anterior
+            requestsList.innerHTML = '';  // Limpiar la lista de solicitudes
 
             requests.forEach((request, index) => {
                 const div = document.createElement('div');
@@ -333,49 +337,36 @@
         // Aceptar solicitud
         function acceptRequest(index) {
             const acceptedRequest = requests.splice(index, 1)[0];
-            history.push(acceptedRequest); // Añadir a historial
-            localStorage.setItem('requests', JSON.stringify(requests));
-            localStorage.setItem('history', JSON.stringify(history));
-
-            alert(`Solicitud aceptada: ${acceptedRequest.name} - ${acceptedRequest.pickup}`);
-            updateRequestsList();
-            updateHistory();
+            history.push(acceptedRequest);
+            updateRequestsList(); // Actualiza la lista de solicitudes.
+            updateHistoryList();
+            alert("Solicitud aceptada");
         }
 
         // Rechazar solicitud
         function rejectRequest(index) {
-            requests.splice(index, 1);
-            localStorage.setItem('requests', JSON.stringify(requests));
-
-            alert("Solicitud rechazada.");
-            updateRequestsList();
-        }
-
-        // Actualizar solicitudes al presionar el botón
-        function refreshRequests() {
-            updateRequestsList();
+            requests.splice(index, 1);  // Eliminar la solicitud de la lista.
+            updateRequestsList();  // Actualizar la lista visible
         }
 
         // Mostrar historial de solicitudes
-        function updateHistory() {
+        function updateHistoryList() {
             const historyList = document.getElementById("historyList");
-            historyList.innerHTML = ''; // Limpiar historial
+            historyList.innerHTML = '';  // Limpiar la lista de historial.
 
-            history.forEach(item => {
+            history.forEach(request => {
                 const div = document.createElement('div');
                 div.classList.add('history-item');
                 div.innerHTML = `
-                    <p><strong>Nombre:</strong> ${item.name}</p>
-                    <p><strong>Lugar de recogida:</strong> ${item.pickup}</p>
+                    <p><strong>Nombre:</strong> ${request.name}</p>
+                    <p><strong>Lugar de recogida:</strong> ${request.pickup}</p>
                 `;
                 historyList.appendChild(div);
             });
         }
 
-        // Actualizar la vista al inicio
-        updateRequestsList();
-        updateHistory();
+        // Llamar a la actualización automática de solicitudes
+        setInterval(updateRequestsList, 5000);  // Actualizar la lista cada 5 segundos
     </script>
-
 </body>
 </html>
