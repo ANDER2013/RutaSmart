@@ -6,7 +6,6 @@
     <title>RutaSmart</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
-        /* Aquí va tu CSS original */
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f5f5f5;
@@ -339,7 +338,7 @@
             requests.forEach((request, index) => {
                 const div = document.createElement('div');
                 div.classList.add('request-item');
-                div.innerHTML = ` 
+                div.innerHTML = `
                     <p><strong>Nombre:</strong> ${request.name}</p>
                     <p><strong>Lugar de recogida:</strong> ${request.pickup}</p>
                     <button onclick="acceptRequest(${index})">Aceptar</button>
@@ -385,5 +384,5 @@
         }
     </script>
 
- </body>
-</html>
+</body>
+</html>  
