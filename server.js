@@ -1,44 +1,58 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
+const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
+const cors = require("cors");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+    cors: {
+        origin: "*", // Permitir todas las conexiones (ajustar en producción)
+        methods: ["GET", "POST"]
+    }
+});
 
-let requests = [];  // Lista de solicitudes de taxis (en memoria)
+app.use(cors());
+app.use(express.static(path.join(__dirname, "public"))); // Servir archivos estáticos (HTML, CSS, JS)
 
-app.use(express.static('public'));  // Carpeta donde estará tu código HTML, JS, etc.
+let requests = []; // Lista de solicitudes de taxis
 
-io.on('connection', (socket) => {
-    console.log('Un usuario se ha conectado');
+io.on("connection", (socket) => {
+    console.log("Nuevo usuario conectado:", socket.id);
 
-    // Enviar todas las solicitudes existentes al nuevo cliente (taxista o cliente)
-    socket.emit('initialRequests', requests);
+    // Enviar solicitudes activas al nuevo taxista o cliente
+    socket.emit("updateRequests", requests);
 
-    // Escuchar por nuevas solicitudes de taxi
-    socket.on('newRequest', (request) => {
-        requests.push(request);
-        io.emit('newRequest', request);  // Notificar a todos los taxistas
+    // Cliente solicita un taxi
+    socket.on("requestTaxi", (data) => {
+        requests.push(data);
+        io.emit("updateRequests", requests);
     });
 
-    // Aceptar solicitud
-    socket.on('acceptRequest', (requestIndex) => {
-        const acceptedRequest = requests.splice(requestIndex, 1)[0];
-        io.emit('acceptRequest', acceptedRequest);
+    // Taxista acepta una solicitud
+    socket.on("acceptRequest", (index) => {
+        if (requests[index]) {
+            const acceptedRequest = requests.splice(index, 1)[0];
+            io.emit("requestAccepted", acceptedRequest); // Notificar al cliente
+            io.emit("updateRequests", requests); // Actualizar la lista de solicitudes
+        }
     });
 
-    // Rechazar solicitud
-    socket.on('rejectRequest', (requestIndex) => {
-        requests.splice(requestIndex, 1);
-        io.emit('rejectRequest', requestIndex);
+    // Taxista rechaza una solicitud
+    socket.on("rejectRequest", (index) => {
+        if (requests[index]) {
+            requests.splice(index, 1);
+            io.emit("updateRequests", requests);
+        }
     });
 
-    socket.on('disconnect', () => {
-        console.log('Un usuario se ha desconectado');
+    socket.on("disconnect", () => {
+        console.log("Usuario desconectado:", socket.id);
     });
 });
 
-server.listen(3000, () => {
-    console.log('Servidor en el puerto 3000');
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

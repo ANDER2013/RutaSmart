@@ -120,3 +120,58 @@ function sendNotification() {
         };
     }
 }
+
+const socket = io(); // Conexión con el servidor
+
+document.getElementById("taxiRequestForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    
+    const name = document.getElementById("name").value;
+    const pickup = document.getElementById("pickup").value;
+    
+    if (name && pickup) {
+        socket.emit("requestTaxi", { name, pickup });
+        alert("Solicitud enviada.");
+        document.getElementById("taxiRequestForm").reset();
+    } else {
+        alert("Por favor, completa todos los campos.");
+    }
+});
+
+// Escuchar actualizaciones en la lista de solicitudes
+socket.on("updateRequests", (requests) => {
+    const requestsList = document.getElementById("requestsList");
+    requestsList.innerHTML = "";
+
+    requests.forEach((request, index) => {
+        const div = document.createElement("div");
+        div.classList.add("request-item");
+        div.innerHTML = `
+            <p><strong>Nombre:</strong> ${request.name}</p>
+            <p><strong>Ubicación:</strong> ${request.pickup}</p>
+            <button onclick="acceptRequest(${index})">Aceptar</button>
+            <button onclick="rejectRequest(${index})">Rechazar</button>
+        `;
+        requestsList.appendChild(div);
+    });
+
+    if (requests.length > 0) {
+        document.getElementById("newRequestNotification").style.display = "block";
+        document.getElementById("notificationSound").play();
+    }
+});
+
+// Aceptar una solicitud de taxi
+function acceptRequest(index) {
+    socket.emit("acceptRequest", index);
+}
+
+// Rechazar una solicitud de taxi
+function rejectRequest(index) {
+    socket.emit("rejectRequest", index);
+}
+
+// Notificar al cliente cuando su solicitud es aceptada
+socket.on("requestAccepted", (request) => {
+    alert(`Tu solicitud ha sido aceptada por un taxista. Recogida en: ${request.pickup}`);
+});
