@@ -385,64 +385,6 @@
         }
     </script>
 
-<!-- Firebase SDK -->
-<script type="module">
-    import { db } from './firebase.js';  // Importa tu archivo de configuración de Firebase
-    import { collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-    
-    // Código de tu solicitud de taxi (función ya explicada anteriormente)
-    document.getElementById("taxiRequestForm").addEventListener("submit", async event => {
-        event.preventDefault();
-    
-        const name = document.getElementById("name").value;
-        const pickup = document.getElementById("pickup").value;
-    
-        if (name && pickup) {
-            const request = { name, pickup, timestamp: new Date() };
-            
-            // Guardar la solicitud en Firebase
-            await addDoc(collection(db, "requests"), request);
-    
-            alert("Taxi solicitado con éxito.");
-            document.getElementById("taxiRequestForm").reset();
-        } else {
-            alert("Por favor, complete todos los campos.");
-        }
-    });
-  
-    // Escuchar solicitudes en tiempo real
-    onSnapshot(collection(db, "requests"), snapshot => {
-        const requestsList = document.getElementById("requestsList");
-        requestsList.innerHTML = ''; // Limpiar lista antes de mostrar nuevas solicitudes
-    
-        snapshot.forEach(doc => {
-            const request = doc.data();
-            const div = document.createElement('div');
-            div.classList.add('request-item');
-            div.innerHTML = `
-                <p><strong>Nombre:</strong> ${request.name}</p>
-                <p><strong>Lugar de recogida:</strong> ${request.pickup}</p>
-                <button onclick="acceptRequest('${doc.id}')">Aceptar</button>
-                <button onclick="rejectRequest('${doc.id}')">Rechazar</button>
-            `;
-            requestsList.appendChild(div);
-        });
-    });
-  
-    // Aceptar solicitud
-    async function acceptRequest(requestId) {
-        const requestRef = doc(db, "requests", requestId);
-        await updateDoc(requestRef, { status: "accepted" });
-        alert("Solicitud aceptada.");
-    }
-  
-    // Rechazar solicitud
-    async function rejectRequest(requestId) {
-        const requestRef = doc(db, "requests", requestId);
-        await deleteDoc(requestRef);
-        alert("Solicitud rechazada.");
-    }
-  </script>
-  
+
 </body>
 </html>
